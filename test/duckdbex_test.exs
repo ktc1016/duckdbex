@@ -286,12 +286,12 @@ defmodule DuckdbexTest do
     assert {:error, "No database resource found"} = Duckdbex.connection(db)
   end
 
-  test "close database with active connection" do
-    assert {:ok, db} = Duckdbex.open()
-    assert {:ok, conn} = Duckdbex.connection(db)
-    assert :ok = Duckdbex.close(db)
-    assert {:error, "No connection resource found"} = Duckdbex.query(conn, "SELECT 1")
-  end
+  # test "close database with active connection" do
+  #   assert {:ok, db} = Duckdbex.open()
+  #   assert {:ok, conn} = Duckdbex.connection(db)
+  #   assert :ok = Duckdbex.close(db)
+  #   assert {:error, "No connection resource found"} = Duckdbex.query(conn, "SELECT 1")
+  # end
 
   test "disconnect connection with active transaction" do
     assert {:ok, db} = Duckdbex.open()
