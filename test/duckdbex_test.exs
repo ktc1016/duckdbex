@@ -247,6 +247,59 @@ defmodule DuckdbexTest do
     assert is_integer(Duckdbex.number_of_threads(db))
   end
 
+  test "close/1" do
+    assert {:ok, db} = Duckdbex.open()
+    assert :ok = Duckdbex.close(db)
+  end
+
+
+  test "close/1 when already closed" do
+    assert {:ok, db} = Duckdbex.open()
+    assert :ok = Duckdbex.close(db)
+    assert {:error, "No database resource found"} = Duckdbex.close(db)
+  end
+
+  test "disconnect/1" do
+    assert {:ok, db} = Duckdbex.open()
+    assert {:ok, conn} = Duckdbex.connection(db)
+    assert :ok = Duckdbex.disconnect(conn)
+  end
+
+
+  test "disconnect/1 when already closed" do
+    assert {:ok, db} = Duckdbex.open()
+    assert {:ok, conn} = Duckdbex.connection(db)
+    assert :ok = Duckdbex.disconnect(conn)
+    assert {:error, "No connection resource found"} = Duckdbex.disconnect(conn)
+  end
+
+  test "cannot use connection after disconnect" do
+    assert {:ok, db} = Duckdbex.open()
+    assert {:ok, conn} = Duckdbex.connection(db)
+    assert :ok = Duckdbex.disconnect(conn)
+    assert{:error, "No connection resource found"} = Duckdbex.query(conn, "SELECT 1")
+  end
+
+  test "cannot use database after close" do
+    assert {:ok, db} = Duckdbex.open()
+    assert :ok = Duckdbex.close(db)
+    assert {:error, "No database resource found"} = Duckdbex.connection(db)
+  end
+
+  test "close database with active connection" do
+    assert {:ok, db} = Duckdbex.open()
+    assert {:ok, conn} = Duckdbex.connection(db)
+    assert :ok = Duckdbex.close(db)
+    assert {:error, "No connection resource found"} = Duckdbex.query(conn, "SELECT 1")
+  end
+
+  test "disconnect connection with active transaction" do
+    assert {:ok, db} = Duckdbex.open()
+    assert {:ok, conn} = Duckdbex.connection(db)
+    assert :ok = Duckdbex.begin_transaction(conn)
+    assert :ok = Duckdbex.disconnect(conn)
+  end
+
   test "when integer parameter is implicitly converted to double" do
     assert {:ok, db} = Duckdbex.open()
     assert {:ok, conn} = Duckdbex.connection(db)

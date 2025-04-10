@@ -107,7 +107,7 @@ static ERL_NIF_TERM
 connection(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   auto dbres = get_resource<duckdb::DuckDB>(env, argv[0]);
   if (!dbres)
-    return enif_make_badarg(env);
+    return nif::make_error_tuple(env, "No database resource found");
 
   ErlangResourceBuilder<duckdb::Connection> resource_builder(connection_nif_type, *dbres->data);
 
@@ -118,10 +118,9 @@ static ERL_NIF_TERM
 query_without_parameters(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   if (argc != 2)
     return enif_make_badarg(env);
-
   auto connres = get_resource<duckdb::Connection>(env, argv[0]);
   if (!connres)
-    return enif_make_badarg(env);
+    return nif::make_error_tuple(env, "No connection resource found");
 
   ErlNifBinary sql_stmt;
   if (!enif_inspect_binary(env, argv[1], &sql_stmt))
@@ -148,7 +147,7 @@ static ERL_NIF_TERM
 query_with_parameters(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   auto connres = get_resource<duckdb::Connection>(env, argv[0]);
   if (!connres)
-    return enif_make_badarg(env);
+    return nif::make_error_tuple(env, "No connection resource found");
 
   ErlNifBinary sql_stmt;
   if (!enif_inspect_binary(env, argv[1], &sql_stmt))
@@ -630,6 +629,38 @@ release(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   return nif::make_atom(env, "ok");
 }
 
+static ERL_NIF_TERM
+close(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+  if (argc != 1)
+    return enif_make_badarg(env);
+
+  auto dbres = get_resource<duckdb::DuckDB>(env, argv[0]);
+  if (!dbres)
+    return nif::make_error_tuple(env, "No database resource found");
+
+  if (!dbres->data)
+    return nif::make_error_tuple(env, "database already closed");
+
+  dbres->data = nullptr;
+  return nif::make_atom(env, "ok");
+}
+
+static ERL_NIF_TERM
+disconnect(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+  if (argc != 1)
+    return enif_make_badarg(env);
+
+  auto connres = get_resource<duckdb::Connection>(env, argv[0]);
+  if (!connres)
+  return nif::make_error_tuple(env, "No connection resource found");
+
+  if (!connres->data)
+    return nif::make_error_tuple(env, "connection already closed");
+
+  connres->data = nullptr;
+  return nif::make_atom(env, "ok");
+}
+
 /*
  * Resources destructors
  */
@@ -772,7 +803,9 @@ static ErlNifFunc nif_funcs[] = {
   {"appender_add_rows", 2, appender_add_rows, ERL_NIF_DIRTY_JOB_IO_BOUND},
   {"appender_flush", 1, appender_flush, ERL_NIF_DIRTY_JOB_IO_BOUND},
   {"appender_close", 1, appender_close, ERL_NIF_DIRTY_JOB_IO_BOUND},
-  {"release", 1, release, ERL_NIF_DIRTY_JOB_IO_BOUND}
+  {"release", 1, release, ERL_NIF_DIRTY_JOB_IO_BOUND},
+  {"close", 1, close, ERL_NIF_DIRTY_JOB_IO_BOUND},
+  {"disconnect", 1, disconnect, ERL_NIF_DIRTY_JOB_IO_BOUND}
 };
 
 ERL_NIF_INIT(Elixir.Duckdbex.NIF, nif_funcs, on_load, on_reload, on_upgrade, NULL)

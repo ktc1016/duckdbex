@@ -485,6 +485,37 @@ defmodule Duckdbex do
     do: Duckdbex.NIF.number_of_threads(db)
 
   @doc """
+  Close the database connection and release all associated resources.
+
+  This should be called when you are done with the database to properly clean up resources.
+  The database cannot be used after this point.
+
+  ## Examples
+
+    iex> {:ok, db} = Duckdbex.open()
+    iex> :ok = Duckdbex.close(db)
+  """
+  @spec close(db()) :: :ok | {:error, reason()}
+  def close(db) when is_reference(db),
+    do: Duckdbex.NIF.close(db)
+
+  @doc """
+  Disconnect from the database and release the connection resources.
+
+  This should be called when you are done with a specific connection to properly clean up resources.
+  The connection cannot be used after this point.
+
+  ## Examples
+
+    iex> {:ok, db} = Duckdbex.open()
+    iex> {:ok, conn} = Duckdbex.connection(db)
+    iex> :ok = Duckdbex.disconnect(conn)
+  """
+  @spec disconnect(connection()) :: :ok | {:error, reason()}
+  def disconnect(connection) when is_reference(connection),
+    do: Duckdbex.NIF.disconnect(connection)
+
+  @doc """
   Convert an erlang/elixir integer to a DuckDB hugeint.
 
   For more information on DuckDB numeric types, see [DuckDB Numeric Data Types](https://duckdb.org/docs/sql/data_types/numeric) For more information on DuckDB numeric types.
